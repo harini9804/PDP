@@ -18,8 +18,8 @@ int valSensor = 1;
 #include <SoftwareSerial.h>
 #define RX 10
 #define TX 11
-String AP = "hello";       // CHANGE ME
-String PASS = "password5"; // CHANGE ME
+String AP = "Pikaa"; //"hello";       // CHANGE ME
+String PASS ="pavsakul1234"; //"password5"; // CHANGE ME
 String API = "E3TR6L3XVLLQ1XZF";//"DELYXM0LLCCZIMP3";   // CHANGE ME
 String HOST = "api.thingspeak.com";
 String PORT = "80";
@@ -253,11 +253,13 @@ void loop() {
   Serial.println(y);
   delay(25);
 
-   n = y - 90;
-  Serial.print("Speed is: ");
-  Serial.println(n);
+   n = y - 200;
+  
+  
   if(n>255)
     n=255;
+    Serial.print("Speed is: ");
+    Serial.println(n);
   motorspeed(n);
    // establish variables for duration of the ping, 
   // Clears the trigPin
@@ -291,6 +293,17 @@ fuzzy->setInput(2, n); //speed
 
  Serial.print("Output is: ");
  Serial.println(output);
+
+   valSensor = (int)output;
+  Serial.print("val sensor: ");
+  Serial.println(valSensor);
+ String getData = "GET /update?api_key="+ API +"&"+ field +"="+String(valSensor);
+sendCommand("AT+CIPMUX=1",5,"OK");
+ sendCommand("AT+CIPSTART=0,\"TCP\",\""+ HOST +"\","+ PORT,15,"OK");
+ sendCommand("AT+CIPSEND=0," +String(getData.length()+4),4,">");
+ esp8266.println(getData);delay(1500);countTrueCommand++;
+ sendCommand("AT+CIPCLOSE=0",5,"OK");
+ 
   digitalWrite(redLed,LOW);
    digitalWrite(greenLed,LOW);
     digitalWrite(blueLed,LOW);
@@ -321,15 +334,7 @@ if(output>7)
 // sendCommand("AT+CIPCLOSE=0",5,"OK");
 
  //valSensor = getSensorData();
-  valSensor = (int)output;
-  Serial.print("val sensor: ");
-  Serial.println(valSensor);
- String getData = "GET /update?api_key="+ API +"&"+ field +"="+String(valSensor);
-sendCommand("AT+CIPMUX=1",5,"OK");
- sendCommand("AT+CIPSTART=0,\"TCP\",\""+ HOST +"\","+ PORT,15,"OK");
- sendCommand("AT+CIPSEND=0," +String(getData.length()+4),4,">");
- esp8266.println(getData);delay(1500);countTrueCommand++;
- sendCommand("AT+CIPCLOSE=0",5,"OK");
+
 
 
   SendMessage();
