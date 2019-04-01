@@ -16,6 +16,7 @@ const int echoPin = 12;
 
 long duration;
 int distance;
+int n = 255;
 //--------------------------------//
 
 #include <SoftwareSerial.h>
@@ -33,7 +34,7 @@ boolean found = false;
 int valSensor = 1;
 
 SoftwareSerial esp8266(RX,TX); 
-SoftwareSerial mySerial(0,1);//tx rx // changed from 3,4 to 0,1 
+SoftwareSerial mySerial(3,4);//tx rx // changed from 3,4 to 0,1 
 
 //-------------------------//
 
@@ -97,7 +98,8 @@ void sendCommand(String command, int maxTime, char readReplay[]) {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  motorspeed(255);
+// 
+  motorspeed(n);
   Serial.println("running");
 
    digitalWrite(trigPin, LOW);
@@ -118,17 +120,35 @@ void loop() {
     Serial.print("Distance: ");
     Serial.print(distance);
 
+     // APPLY FUZZY LOGIC
+    
+    // Step 5 - Report inputs value, passing its ID and value
+    fuzzy->setInput(1, distance);
+    fuzzy->setInput(2, n); //speed
+     // Step 6 - Exe the fuzzification
+     fuzzy->fuzzify(); 
+     // Step 7 - Exe the desfuzzyficação for each output, passing its ID
+     float output = fuzzy->defuzzify(1);
+    
+     Serial.print("Output is: ");
+     Serial.print(output);
 
-   valSensor = distance;
-// valSensor = getSensorData();
- String getData = "GET /update?api_key="+ API +"&"+ field +"="+String(valSensor);
-sendCommand("AT+CIPMUX=1",5,"OK");
- sendCommand("AT+CIPSTART=0,\"TCP\",\""+ HOST +"\","+ PORT,15,"OK");
- sendCommand("AT+CIPSEND=0," +String(getData.length()+4),4,">");
- esp8266.println(getData);delay(1500);countTrueCommand++;
- sendCommand("AT+CIPCLOSE=0",5,"OK");
- Serial.println("cloud");
 
+     valSensor = output;
+    // valSensor = getSensorData();
+     String getData = "GET /update?api_key="+ API +"&"+ field +"="+String(valSensor);
+     sendCommand("AT+CIPMUX=1",5,"OK");
+     sendCommand("AT+CIPSTART=0,\"TCP\",\""+ HOST +"\","+ PORT,15,"OK");
+     sendCommand("AT+CIPSEND=0," +String(getData.length()+4),4,">");
+     esp8266.println(getData);delay(1500);countTrueCommand++;
+     sendCommand("AT+CIPCLOSE=0",5,"OK");
+     Serial.println("cloud");
+
+    if(output>7){
+      SendMessage();
+      MakeCall();
+      
+      }
 
 }
 
@@ -140,28 +160,50 @@ void motorspeed(int n)
   analogWrite(11, 0);
 }
 
-void distance_calc(){
+//void distance_calc(){
+//
+//   digitalWrite(trigPin, LOW);
+//    delayMicroseconds(2);
+//    
+//    // Sets the trigPin on HIGH state for 10 micro seconds
+//    digitalWrite(trigPin, HIGH);
+//    delayMicroseconds(10);
+//    digitalWrite(trigPin, LOW);
+//    
+//    // Reads the echoPin, returns the sound wave travel time in microseconds
+//    duration = pulseIn(echoPin, HIGH);
+//    
+//    // Calculating the distance
+//    distance= duration*0.034/2;
+//    
+//    // Prints the distance on the Serial Monitor
+//    Serial.println("Distance: ");
+//    Serial.println(distance);
+//
+//    
+//
+//  
+//  }
 
-   digitalWrite(trigPin, LOW);
-    delayMicroseconds(2);
-    
-    // Sets the trigPin on HIGH state for 10 micro seconds
-    digitalWrite(trigPin, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(trigPin, LOW);
-    
-    // Reads the echoPin, returns the sound wave travel time in microseconds
-    duration = pulseIn(echoPin, HIGH);
-    
-    // Calculating the distance
-    distance= duration*0.034/2;
-    
-    // Prints the distance on the Serial Monitor
-    Serial.println("Distance: ");
-    Serial.println(distance);
 
-  
-  }
+void SendMessage()
+{
+  Serial.println("Entered");
+  mySerial.println("AT+CMGF=1");    //Sets the GSM Module in Text Mode
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
+  mySerial.println("AT+CMGS=\"+918790148137\"\r"); // Replace x with mobile number
+  delay(1000);
+  mySerial.println("Kandigai");// The SMS text you want to send
+  delay(100);
+   mySerial.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+}
+void MakeCall()
+{
+  mySerial.println("ATD+918790148137;"); // ATDxxxxxxxxxx; -- watch out here for semicolon at the end!!
+  Serial.println("Calling  "); // print response over serial port
+  delay(2000);
+}
 
 void fuzzy_rules(){
   
